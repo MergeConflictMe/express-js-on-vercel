@@ -1,52 +1,30 @@
-import express from 'express'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import type { NextApiRequest, NextApiResponse } from 'next'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Добавляем CORS заголовки
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-const app = express()
+  // Получаем URL из параметра запроса
+  const targetUrl = req.query.url as string
 
-// Home route - HTML
-app.get('/', (req, res) => {
-  res.type('html').send(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8"/>
-        <title>Express on Vercel</title>
-        <link rel="stylesheet" href="/style.css" />
-      </head>
-      <body>
-        <nav>
-          <a href="/">Home</a>
-          <a href="/about">About</a>
-          <a href="/api-data">API Data</a>
-          <a href="/healthz">Health</a>
-        </nav>
-        <h1>Welcome to Express on Vercel 🚀</h1>
-        <p>This is a minimal example without a database or forms.</p>
-        <img src="/logo.png" alt="Logo" width="120" />
-      </body>
-    </html>
-  `)
-})
+  if (!targetUrl) {
+    return res.status(400).json({ error: 'Use: ?url=https://example.com' })
+  }
 
-app.get('/about', function (req, res) {
-  res.sendFile(path.join(__dirname, '..', 'components', 'about.htm'))
-})
-
-// Example API endpoint - JSON
-app.get('/api-data', (req, res) => {
-  res.json({
-    message: 'Here is some sample API data',
-    items: ['apple', 'banana', 'cherry'],
+  // Делаем запрос к целевому сайту
+  fetch(targetUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    },
   })
-})
-
-// Health check
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() })
-})
-
-export default app
+    .then(response => response.text())
+    .then(html => {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.status(200).send(html)
+    })
+    .catch(error => {
+      res.status(500).json({ error: error.message })
+    })
+}
